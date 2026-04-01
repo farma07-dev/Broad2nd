@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Approval Workflow</title>
+    <link rel="stylesheet" href="InvoiceApprovalTable.css">
+</head>
+<body>
+
+    <main class="container">
+        <h1>Pending Invoices</h1>
+        <p class="instructions" id="table-instructions">
+            Use Arrow keys to navigate the grid. Press 'A' to approve or 'R' to reject the focused row. Press Enter on buttons to activate.
+        </p>
+
+        <!-- Live region for screen reader announcements -->
+        <div id="announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+        <div class="table-wrapper">
+            <table 
+                id="invoice-table" 
+                role="grid" 
+                aria-label="Invoices pending approval"
+                aria-describedby="table-instructions"
+            >
+                <thead>
+                    <tr role="row">
+                        <th role="columnheader" scope="col">Invoice ID</th>
+                        <th role="columnheader" scope="col">Vendor</th>
+                        <th role="columnheader" scope="col" class="amount-col">Amount</th>
+                        <th role="columnheader" scope="col">Due Date</th>
+                        <th role="columnheader" scope="col">Status</th>
+                        <th role="columnheader" scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Row 1 -->
+                    <tr role="row" id="row-1" data-status="pending">
+                        <td role="gridcell" tabindex="0">INV-2026-001</td>
+                        <td role="gridcell" tabindex="-1">Acme Corp</td>
+                        <td role="gridcell" tabindex="-1" class="amount-col">$1,250.00</td>
+                        <td role="gridcell" tabindex="-1">Apr 15, 2026</td>
+                        <td role="gridcell" tabindex="-1" class="status-cell">
+                            <span class="status-badge pending" data-testid="invoice-status">Pending</span>
+                        </td>
+                        <td role="gridcell" tabindex="-1" class="actions-cell">
+                            <button class="btn btn-approve" aria-label="Approve invoice INV-2026-001" data-action="approve">Approve</button>
+                            <button class="btn btn-reject" aria-label="Reject invoice INV-2026-001" data-action="reject">Reject</button>
+                        </td>
+                    </tr>
+                    
+                    <!-- Row 2 -->
+                    <tr role="row" id="row-2" data-status="pending">
+                        <td role="gridcell" tabindex="-1">INV-2026-002</td>
+                        <td role="gridcell" tabindex="-1">Globex Inc</td>
+                        <td role="gridcell" tabindex="-1" class="amount-col">$8,400.00</td>
+                        <td role="gridcell" tabindex="-1">Apr 18, 2026</td>
+                        <td role="gridcell" tabindex="-1" class="status-cell">
+                            <span class="status-badge pending" data-testid="invoice-status">Pending</span>
+                        </td>
+                        <td role="gridcell" tabindex="-1" class="actions-cell">
+                            <button class="btn btn-approve" aria-label="Approve invoice INV-2026-002" data-action="approve">Approve</button>
+                            <button class="btn btn-reject" aria-label="Reject invoice INV-2026-002" data-action="reject">Reject</button>
+                        </td>
+                    </tr>
+
+                    <!-- Row 3 -->
+                    <tr role="row" id="row-3" data-status="pending">
+                        <td role="gridcell" tabindex="-1">INV-2026-003</td>
+                        <td role="gridcell" tabindex="-1">Initech</td>
+                        <td role="gridcell" tabindex="-1" class="amount-col">$450.50</td>
+                        <td role="gridcell" tabindex="-1">May 01, 2026</td>
+                        <td role="gridcell" tabindex="-1" class="status-cell">
+                            <span class="status-badge pending" data-testid="invoice-status">Pending</span>
+                        </td>
+                        <td role="gridcell" tabindex="-1" class="actions-cell">
+                            <button class="btn btn-approve" aria-label="Approve invoice INV-2026-003" data-action="approve">Approve</button>
+                            <button class="btn btn-reject" aria-label="Reject invoice INV-2026-003" data-action="reject">Reject</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const table = document.getElementById('invoice-table');
+            const cells = Array.from(table.querySelectorAll('tbody td[role="gridcell"]'));
+            const announcer = document.getElementById('announcer');
+            
+            // Map the grid for navigation (rows x cols)
+            const rows = Array.from(table.querySelectorAll('tbody tr'));
+            const grid = rows.map(row => Array.from(row.querySelectorAll('td')));
+            
+            let currentRow = 0;
+            let currentCol = 0;
+
+            function updateFocus(newRow, newCol) {
+                // Bounds checking
+                if (newRow < 0) newRow = 0;
+                if (newRow >= grid.length) newRow = grid.length - 1;
+                if (newCol < 0) newCol = 0;
+                if (newCol >= grid[0].length) newCol = grid[0].length - 1;
+
+                // Remove tabindex from old cell
+                grid[currentRow][currentCol].setAttribute('tabindex', '-1');
+                
+                // Set tabindex on new cell and focus it
+                const newCell = grid[newRow][newCol];
+                newCell.setAttribute('tabindex', '0');
+                newCell.focus();
+
+                currentRow = newRow;
+                currentCol = newCol;
+            }
+
+            // Keyboard Navigation (Roving Tabindex)
+            table.addEventListener('keydown', (e) => {
+                const target = e.target;
+                
+                // Only handle grid navigation if we are focused on a cell or a button inside it
+                const isCell = target.getAttribute('role') === 'gridcell';
+                const isButtonInCell = target.tagName === 'BUTTON' && target.closest('td');
+                
+                if (!isCell && !isButtonInCell) return;
+
+                switch (e.key) {
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        updateFocus(currentRow, currentCol + 1);
+                        break;
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        updateFocus(currentRow, currentCol - 1);
+                        break;
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        updateFocus(currentRow + 1, currentCol);
+                        break;
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        updateFocus(currentRow - 1, currentCol);
+                        break;
+                    case 'Home':
+                        e.preventDefault();
+                        updateFocus(currentRow, 0); // Start of row
+                        break;
+                    case 'End':
+                        e.preventDefault();
+                        updateFocus(currentRow, grid[0].length - 1); // End of row
+                        break;
+                    case 'a':
+                    case 'A':
+                        // Shortcut: Approve
+                        e.preventDefault();
+                        handleAction(rows[currentRow], 'approve');
+                        break;
+                    case 'r':
+                    case 'R':
+                        // Shortcut: Reject
+                        e.preventDefault();
+                        handleAction(rows[currentRow], 'reject');
+                        break;
+                    case 'Enter':
+                    case ' ':
+                        // Activate focused button
+                        if (target.tagName === 'BUTTON') {
+                            e.preventDefault();
+                            target.click();
+                        }
+                        break;
+                }
+            });
+
+            // Button Clicks
+            table.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON') {
+                    const cell = e.target.closest('td');
+                    const row = e.target.closest('tr');
+                    
+                    // Fix mouse click focus bug by dynamically updating currentRow and currentCol on click
+                    const rowIndex = grid.findIndex(r => r.includes(cell));
+                    const colIndex = rowIndex !== -1 ? grid[rowIndex].indexOf(cell) : -1;
+                    
+                    if (rowIndex !== -1 && colIndex !== -1) {
+                        // Remove tabindex from old cell
+                        grid[currentRow][currentCol].setAttribute('tabindex', '-1');
+                        
+                        // Update coordinates
+                        currentRow = rowIndex;
+                        currentCol = colIndex;
+                        
+                        // Set tabindex on new cell
+                        grid[currentRow][currentCol].setAttribute('tabindex', '0');
+                    }
+
+                    const action = e.target.getAttribute('data-action');
+                    handleAction(row, action);
+                }
+            });
+
+            function handleAction(row, action) {
+                const invoiceId = row.querySelector('td').textContent;
+                const statusBadge = row.querySelector('.status-badge');
+                const actionsCell = row.querySelector('.actions-cell');
+                
+                if (action === 'approve') {
+                    row.setAttribute('data-status', 'approved');
+                    statusBadge.textContent = 'Approved';
+                    statusBadge.className = 'status-badge approved';
+                    actionsCell.innerHTML = '<span class="action-text text-success">Approved ✓</span>';
+                    announcer.textContent = `Invoice ${invoiceId} approved.`;
+                } else if (action === 'reject') {
+                    row.setAttribute('data-status', 'rejected');
+                    statusBadge.textContent = 'Rejected';
+                    statusBadge.className = 'status-badge rejected';
+                    actionsCell.innerHTML = '<span class="action-text text-danger">Rejected ✗</span>';
+                    announcer.textContent = `Invoice ${invoiceId} rejected.`;
+                }
+                
+                // Return focus to the cell after DOM rewrite so user doesn't lose place
+                grid[currentRow][currentCol].focus();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,16 +1,46 @@
-name: Greetings
+name: CI Pipeline
 
-on: [pull_request_target, issues]
+on:
+  push:
+  pull_request:
 
 jobs:
-  greeting:
+  test:
+    name: Run Tests
     runs-on: ubuntu-latest
-    permissions:
-      issues: write
-      pull-requests: write
     steps:
-    - uses: actions/first-interaction@v1
-      with:
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
-        issue-message: "Message that will be displayed on users' first issue"
-        pr-message: "Message that will be displayed on users' first pull request"
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run tests
+        run: npm run test:e2e
+
+  build:
+    name: Create Build
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Prepare build files
+        run: |
+          mkdir -p dist
+          cp InvoiceApprovalTable.html InvoiceApprovalTable.css InvoiceApprovalTable.js dist/ 2>/dev/null || true
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-build
+          path: dist/

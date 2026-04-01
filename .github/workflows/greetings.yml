@@ -19,11 +19,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          echo "registry=https://usw1.packages.broadcom.com/artifactory/api/npm/twoe-npm-virtual/" > .npmrc
-          echo "//usw1.packages.broadcom.com/artifactory/api/npm/twoe-npm-virtual/:_authToken=${{ secrets.NPM_AUTH_TOKEN }}" >> .npmrc
-          echo "always-auth=true" >> .npmrc
-          echo "strict-ssl=false" >> .npmrc
-          npm install
+          rm -f .npmrc package-lock.json
+          npm install --registry=https://registry.npmjs.org/
 
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps chromium
